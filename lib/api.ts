@@ -48,7 +48,7 @@ export interface InventoryItem {
   updated_at: string
 }
 
-export interface AddInventoryRequest {
+export interface UpdateInventoryRequest {
   pharmacy_id: number
   medicine_id: number
   stock_quantity: number
@@ -107,8 +107,8 @@ export interface AddRecordRequest {
 
 // Pharmacy API functions
 export const pharmacyService = {
-  async addInventory(data: AddInventoryRequest): Promise<InventoryItem> {
-    const response = await pharmacyAPI.post('/api/inventory/', data)
+  async updateInventory(id: number, data: UpdateInventoryRequest): Promise<InventoryItem> {
+    const response = await pharmacyAPI.put(`/api/inventory/${id}/`, data)
     return response.data
   },
 

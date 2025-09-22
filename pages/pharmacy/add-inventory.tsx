@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from 'react'
 import Layout from '@/components/Layout'
 import { useForm } from 'react-hook-form'
-import { pharmacyService, AddInventoryRequest, Medicine } from '@/lib/api'
+import { pharmacyService, UpdateInventoryRequest, Medicine } from '@/lib/api'
 import toast from 'react-hot-toast'
-import { Package, Building, Pill, DollarSign, Hash, Calendar, Loader, CheckCircle, Search } from 'lucide-react'
+import { Package, Building, Pill, DollarSign, Hash, Calendar, Loader, CheckCircle, Search, RefreshCw } from 'lucide-react'
 import Head from 'next/head'
 
 interface InventoryFormData {
+  inventory_id: number
   pharmacy_id: number
   medicine_id: number
   stock_quantity: number
   price: string
 }
 
-const AddInventoryPage: React.FC = () => {
+const UpdateInventoryPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitSuccess, setSubmitSuccess] = useState(false)
   const [medicines, setMedicines] = useState<Medicine[]>([])
@@ -76,25 +77,31 @@ const AddInventoryPage: React.FC = () => {
     setSubmitSuccess(false)
     
     try {
-      const requestData: AddInventoryRequest = {
-        ...data,
+      const requestData: UpdateInventoryRequest = {
+        pharmacy_id: data.pharmacy_id,
+        medicine_id: data.medicine_id,
+        stock_quantity: data.stock_quantity,
+        price: data.price,
         created_at: new Date().toISOString()
       }
 
-      const response = await pharmacyService.addInventory(requestData)
-      
-      toast.success('Inventory item added successfully!')
+      const response = await pharmacyService.updateInventory(data.inventory_id, requestData)
+      console.log('Sending request:', JSON.stringify(requestData, null, 2))
+
+      toast.success('Inventory item updated successfully!')
       setSubmitSuccess(true)
       
       // Reset form after successful submission
       reset()
       
-      console.log('Inventory added:', response)
+      console.log('Inventory updated:', response)
+
       
     } catch (error: any) {
-      console.error('Error adding inventory:', error)
-      const errorMessage = error.response?.data?.message || 'Failed to add inventory item. Please try again.'
+      console.error('Error updating inventory:', error)
+      const errorMessage = error.response?.data?.message || 'Failed to update inventory item. Please try again.'
       toast.error(errorMessage)
+
     } finally {
       setIsSubmitting(false)
     }
@@ -103,7 +110,7 @@ const AddInventoryPage: React.FC = () => {
   return (
     <>
       <Head>
-        <title>Add to Inventory - Pharmacy Dashboard</title>
+        <title>Update Inventory - Pharmacy Dashboard</title>
       </Head>
       
       <Layout userType="pharmacy">
@@ -111,13 +118,13 @@ const AddInventoryPage: React.FC = () => {
           {/* Header */}
           <div className="mb-8">
             <div className="flex items-center space-x-3 mb-4">
-              <div className="bg-green-100 p-2 rounded-lg">
-                <Package className="h-6 w-6 text-green-600" />
+              <div className="bg-blue-100 p-2 rounded-lg">
+                <RefreshCw className="h-6 w-6 text-blue-600" />
               </div>
-              <h1 className="text-2xl font-bold text-gray-900">Add to Inventory</h1>
+              <h1 className="text-2xl font-bold text-gray-900">Update Inventory</h1>
             </div>
             <p className="text-gray-600">
-              Add a new medicine to your pharmacy inventory with stock quantity and pricing information.
+              Update an existing medicine in your pharmacy inventory with new stock quantity and pricing information.
             </p>
           </div>
 
@@ -131,7 +138,7 @@ const AddInventoryPage: React.FC = () => {
                 <div>
                   <h4 className="text-sm font-medium text-green-800">Inventory Updated Successfully!</h4>
                   <p className="text-sm text-green-700 mt-1">
-                    The medicine has been added to your inventory with the specified stock and pricing.
+                    The medicine inventory has been updated with the new stock and pricing information.
                   </p>
                 </div>
               </div>
@@ -179,6 +186,33 @@ const AddInventoryPage: React.FC = () => {
           {/* Form */}
           <div className="card p-6">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+              {/* Inventory ID */}
+              <div>
+                <label className="form-label">
+                  <Hash className="inline h-4 w-4 mr-2" />
+                  Inventory ID
+                </label>
+                <input
+                  type="number"
+                  className="form-input"
+                  placeholder="Enter the inventory ID to update"
+                  {...register('inventory_id', { 
+                    required: 'Inventory ID is required',
+                    min: {
+                      value: 1,
+                      message: 'Inventory ID must be a positive number'
+                    },
+                    valueAsNumber: true
+                  })}
+                />
+                {errors.inventory_id && (
+                  <p className="text-red-500 text-sm mt-1">{errors.inventory_id.message}</p>
+                )}
+                <p className="text-sm text-gray-500 mt-1">
+                  The unique identifier of the inventory item you want to update
+                </p>
+              </div>
+
               {/* Pharmacy ID */}
               <div>
                 <label className="form-label">
@@ -191,10 +225,6 @@ const AddInventoryPage: React.FC = () => {
                   placeholder="Enter your pharmacy ID"
                   {...register('pharmacy_id', { 
                     required: 'Pharmacy ID is required',
-                    min: {
-                      value: 1,
-                      message: 'Pharmacy ID must be a positive number'
-                    },
                     valueAsNumber: true
                   })}
                 />
@@ -259,7 +289,7 @@ const AddInventoryPage: React.FC = () => {
                 <input
                   type="number"
                   className="form-input"
-                  placeholder="Enter available stock quantity"
+                  placeholder="Enter updated stock quantity"
                   {...register('stock_quantity', { 
                     required: 'Stock quantity is required',
                     min: {
@@ -290,7 +320,7 @@ const AddInventoryPage: React.FC = () => {
                 <input
                   type="text"
                   className="form-input"
-                  placeholder="Enter price per unit (e.g., 25.50)"
+                  placeholder="Enter updated price per unit (e.g., 25.50)"
                   {...register('price', { 
                     required: 'Price is required',
                     pattern: {
@@ -303,7 +333,7 @@ const AddInventoryPage: React.FC = () => {
                   <p className="text-red-500 text-sm mt-1">{errors.price.message}</p>
                 )}
                 <p className="text-sm text-gray-500 mt-1">
-                  Price per unit in your local currency
+                  Updated price per unit in your local currency
                 </p>
               </div>
 
@@ -317,12 +347,12 @@ const AddInventoryPage: React.FC = () => {
                   {isSubmitting ? (
                     <>
                       <Loader className="animate-spin h-4 w-4 mr-2" />
-                      Adding to Inventory...
+                      Updating Inventory...
                     </>
                   ) : (
                     <>
-                      <Package className="h-4 w-4 mr-2" />
-                      Add to Inventory
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Update Inventory
                     </>
                   )}
                 </button>
@@ -343,6 +373,7 @@ const AddInventoryPage: React.FC = () => {
           <div className="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <h4 className="text-sm font-medium text-yellow-800 mb-2">Important Notes</h4>
             <ul className="text-sm text-yellow-700 space-y-1">
+              <li>• You need the exact Inventory ID of the item you want to update</li>
               <li>• Make sure to select the correct medicine from the dropdown</li>
               <li>• Stock quantity represents the number of units available for sale</li>
               <li>• Price should be entered as a decimal number (e.g., 25.50)</li>
@@ -356,4 +387,4 @@ const AddInventoryPage: React.FC = () => {
   )
 }
 
-export default AddInventoryPage
+export default UpdateInventoryPage
